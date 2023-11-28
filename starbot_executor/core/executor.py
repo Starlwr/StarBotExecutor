@@ -76,7 +76,7 @@ class AsyncTaskExecutor:
     """
     异步任务执行器
     """
-    __loop: AbstractEventLoop
+    __loop: Optional[AbstractEventLoop]
     """asyncio 事件循环"""
 
     __running_tasks: Set[Task]
@@ -87,6 +87,12 @@ class AsyncTaskExecutor:
 
     __handlers: Dict[str, Handler]
     """订阅-发布回调方法"""
+
+    def __init__(self):
+        self.__loop = None
+        self.__running_tasks = set()
+        self.__task_queue = Queue()
+        self.__handlers = {"Default": Handler()}
 
     def init(self, loop: Optional[AbstractEventLoop] = None) -> AbstractEventLoop:
         """
@@ -101,9 +107,6 @@ class AsyncTaskExecutor:
         self.__loop = loop
         if self.__loop is None:
             self.__loop = asyncio.new_event_loop()
-        self.__running_tasks = set()
-        self.__task_queue = Queue()
-        self.__handlers = {"Default": Handler()}
         self.create_task(self.__queue_task_executor())
         return self.__loop
 
@@ -129,6 +132,9 @@ class AsyncTaskExecutor:
         Returns:
             Task
         """
+        if self.__loop is None:
+            raise RuntimeError("在执行任务之前先使用 executor.init() 或 executor.init(loop) 方法初始化异步执行器")
+
         task = self.__loop.create_task(func)
         self.__running_tasks.add(task)
         task.add_done_callback(lambda t: self.__running_tasks.remove(t))
