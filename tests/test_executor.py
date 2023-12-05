@@ -41,9 +41,9 @@ async def main():
 
     # 排队执行示例
     await asyncio.sleep(1)
-    await executor.create_queue_task(test(), 3)
-    await executor.create_queue_task(test(), 3)
-    await executor.create_queue_task(test(), 3)
+    await executor.create_queue_task(test, 3)
+    await executor.create_queue_task(test, 3)
+    await executor.create_queue_task(test, 3)
 
 
 async def test():

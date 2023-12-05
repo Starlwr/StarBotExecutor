@@ -92,9 +92,9 @@ async def main():
 
     # 排队执行示例
     await asyncio.sleep(1)
-    await executor.create_queue_task(test(), 3)
-    await executor.create_queue_task(test(), 3)
-    await executor.create_queue_task(test(), 3)
+    await executor.create_queue_task(test, 3)
+    await executor.create_queue_task(test, 3)
+    await executor.create_queue_task(test, 3)
 
 
 async def test():
@@ -151,7 +151,7 @@ Returns:
 
 #### 3. create_queue_task
 ```
-create_queue_task(self, func: Coroutine, wait: Union[int, float] = 0) -> NoReturn
+create_queue_task(self, func: Callable, wait: Union[int, float] = 0) -> NoReturn
 ```
 向异步任务执行队列中添加新任务
 
@@ -162,7 +162,19 @@ Args:
 Returns:
 * 无返回值
 
-#### 4. create_channel
+#### 4. remove_queue_task
+```
+remove_queue_task(self, func: Callable) -> bool
+```
+从异步任务执行队列中移除任务
+
+Args:
+* func: 异步任务
+
+Returns:
+* 是否移除成功
+
+#### 5. create_channel
 ```
 create_channel(self, channel: str) -> NoReturn
 ```
@@ -174,7 +186,7 @@ Args:
 Returns:
 * 无返回值
 
-#### 5. add_event_listener
+#### 6. add_event_listener
 ```
 add_event_listener(self, func: Callable, *subjects: Any, channel: str = "Default") -> NoReturn
 ```
@@ -188,7 +200,7 @@ Args:
 Returns:
 * 无返回值
 
-#### 6. remove_event_listener
+#### 7. remove_event_listener
 ```
 remove_event_listener(self, *subjects: Any, func: Optional[Callable] = None, channel: str = "Default") -> bool
 ```
@@ -202,7 +214,7 @@ Args:
 Returns:
 * 是否移除成功
 
-#### 7. on
+#### 8. on
 ```
 on(self, *subjects: Any, channel: str = "Default") -> Callable
 ```
@@ -215,7 +227,7 @@ Args:
 Returns:
 * 装饰后的函数
 
-#### 8. dispatch
+#### 9. dispatch
 ```
 dispatch(self, data: Any, *subjects: Any, recursion: bool = True, channel: str = "Default") -> NoReturn
 ```

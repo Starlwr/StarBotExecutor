@@ -1,6 +1,7 @@
 import asyncio
 import inspect
 from asyncio import AbstractEventLoop, Task, Queue
+from collections import deque
 from typing import Dict, Coroutine, Set, Optional, Any, NoReturn, Tuple, Union, List, Callable
 
 
@@ -82,7 +83,7 @@ class AsyncTaskExecutor:
     __running_tasks: Set[Task]
     """执行中的任务"""
 
-    __task_queue: Queue[Tuple[Coroutine, int]]
+    __task_queue: Queue[Tuple[Callable, int]]
     """排队执行队列"""
 
     __handlers: Dict[str, Handler]
@@ -93,6 +94,9 @@ class AsyncTaskExecutor:
         self.__running_tasks = set()
         self.__task_queue = Queue()
         self.__handlers = {"Default": Handler()}
+
+    def __contains__(self, item):
+        return item in list(map(lambda task: task[0], self.__task_queue.__getattribute__("_queue")))
 
     def init(self, loop: Optional[AbstractEventLoop] = None) -> AbstractEventLoop:
         """
@@ -140,7 +144,7 @@ class AsyncTaskExecutor:
         task.add_done_callback(lambda t: self.__running_tasks.remove(t))
         return task
 
-    async def create_queue_task(self, func: Coroutine, wait: Union[int, float] = 0) -> NoReturn:
+    async def create_queue_task(self, func: Callable, wait: Union[int, float] = 0) -> NoReturn:
         """
         向异步任务执行队列中添加新任务
 
@@ -150,13 +154,37 @@ class AsyncTaskExecutor:
         """
         await self.__task_queue.put((func, wait))
 
+    def remove_queue_task(self, func: Callable) -> bool:
+        """
+        从异步任务执行队列中移除任务
+
+        Args:
+            func: 异步任务
+
+        Returns:
+            是否移除成功
+        """
+        if func not in self:
+            return False
+
+        async def empty():
+            pass
+
+        queue: deque = self.__task_queue.__getattribute__("_queue")
+        for index, (task, _) in enumerate(queue):
+            if task == func:
+                queue[index] = (empty, 0)
+                return True
+
+        return False
+
     async def __queue_task_executor(self) -> NoReturn:
         """
         异步任务队列调度执行器，随异步任务执行器初始化自动启动
         """
         while True:
             func, wait = await self.__task_queue.get()
-            self.create_task(func)
+            self.create_task(func())
             await asyncio.sleep(wait)
             self.__task_queue.task_done()
 
